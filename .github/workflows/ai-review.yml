@@ -32,15 +32,8 @@ jobs:
           echo "Different lines: $(wc -l < pr_diff.txt)"
       
       - name: AI Code Review
-        env:
-          OLLAMA_ENDPOINT: "http://localhost:11434/api/generate"
         run: |
-          pip install requests
-          python scripts/ai_reviewer.py \
-            --diff pr_diff.txt \
-            --output review.md \
-            --model "qwen2.5-coder:7b" \
-            --endpoint "http://localhost:11434/api/generate"
+          docker run --rm -v "${{ github.workspace }}:/app" -w /app python:3.9-slim /bin/sh -c "pip install requests && python scripts/ai_reviewer.py --diff pr_diff.txt --output review.md --model 'qwen2.5-coder:7b' --endpoint 'http://host.docker.internal:11434/api/generate'"
       
       - name: Post Review Comment
         uses: actions/github-script@v6
