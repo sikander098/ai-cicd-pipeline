@@ -26,7 +26,8 @@ Build Logs:
 ```
 """
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key={api_key}"
+    model = "gemini-1.5-flash-latest"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
     
     headers = {
         "Content-Type": "application/json"
@@ -58,7 +59,7 @@ Build Logs:
                     retry_delay *= 2
                     continue
                 else:
-                    return "❌ AI RCA failed: Rate limit exceeded after 3 retries."
+                    return f"❌ AI RCA failed: Rate limit exceeded after {max_retries} retries using {model}."
             
             response.raise_for_status()
             
