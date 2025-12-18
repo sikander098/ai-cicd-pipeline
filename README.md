@@ -1,7 +1,7 @@
 # AI-Powered CI/CD Pipeline & Code Reviewer
 ![Build Status](https://img.shields.io/badge/build-passing-brightgreen) ![Python](https://img.shields.io/badge/python-3.9%2B-blue) ![LLM](https://img.shields.io/badge/AI-Gemini%20%7C%20Groq-purple)
 
-A self-healing, intelligent CI/CD pipeline architecture that integrates **Generative AI** into the software delivery lifecycle. It performs automated code reviews, detects security vulnerabilities (SAST), and provides Automated Root Cause Analysis (RCA) for build failures. Uses **Google Gemini 2.0 Flash** for high-speed inference.
+A self-healing, intelligent CI/CD pipeline architecture that integrates **Local Generative AI** into the software delivery lifecycle. It performs automated code reviews, detects security vulnerabilities (SAST), and provides Automated Root Cause Analysis (RCA) for build failures. Uses **Ollama + Qwen 2.5 Coder** for private, free, and unlimited inference.
 
 > **Status:** Reference Implementation (Architecture Phase)
 
@@ -15,7 +15,7 @@ A Python-based agent that hooks into GitHub Pull Requests:
 
 ### 🧠 Automated Root Cause Analysis (RCA)
 *   **Log Parsing:** Automatically captures build failure logs from GitHub Actions.
-*   **Contextual Remediation:** Feeds errors to the LLM (Gemini 2.0 / Groq) to generate specific fix code blocks.
+*   **Contextual Remediation:** Feeds errors to the Local LLM (Ollama) to generate specific fix code blocks.
 *   **ChatOps:** Posts the fix directly to the PR comments.
 
 ### 📈 Predictive Scaling (Architecture)
@@ -33,7 +33,7 @@ graph TD
     subgraph "AI Pipeline"
         GH -->|Trigger| Agent[Python AI Agent]
         Agent -->|Diff Analysis| LLM{LLM Inference}
-        LLM -->|Gemini 2.0 Flash| Google[Google AI]
+        LLM -->|Ollama API| Local[Local Host:11434]
         LLM -->|Llama 3 70b| Groq[Groq API]
     end
     
@@ -49,12 +49,13 @@ graph TD
 
 ### Prerequisites
 *   GitHub Repository with Actions enabled.
-*   LLM API Key: **Google Gemini** (Default) or **Groq** (Low-Latency Mode).
+*   **Ollama** installed locally (`winget install Ollama.Ollama`).
+*   Model pulled: `ollama pull qwen2.5-coder:7b`.
 
 ### Installation
 1.  **Workflows**: Copy `.github/workflows/ai-review.yml` to your repo.
 2.  **Scripts**: Place `scripts/ai_reviewer.py` in your source.
-3.  **Secrets**: Add `GOOGLE_API_KEY` (or `GROQ_API_KEY`) to GitHub Repository Secrets.
+3.  **Secrets**: None required! (Runs on localhost).
 
 ## 💻 Usage Example
 

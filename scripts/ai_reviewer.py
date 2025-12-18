@@ -27,50 +27,41 @@ Code Diff:
 ```
 """
 
-    model = "gemini-1.5-flash-latest"
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+    model = "qwen2.5-coder:7b"
+    url = "http://localhost:11434/api/generate"
     
     headers = {
         "Content-Type": "application/json"
     }
     
+    # Ollama API Format
     payload = {
-        "contents": [{
-            "parts": [{"text": prompt}]
-        }],
-        "generationConfig": {
+        "model": model,
+        "prompt": prompt,
+        "stream": False,
+        "options": {
             "temperature": 0.2,
-            "maxOutputTokens": 2048
+            "num_predict": 2048
         }
     }
     
     import time
     
-    max_retries = 5
-    retry_delay = 10  # seconds
+    max_retries = 3
+    retry_delay = 2  # seconds
 
     for attempt in range(max_retries):
         try:
             response = requests.post(url, headers=headers, json=payload)
-            
-            if response.status_code == 429:
-                if attempt < max_retries - 1:
-                    print(f"⏳ Rate limited (429). Retrying in {retry_delay}s...")
-                    time.sleep(retry_delay)
-                    retry_delay *= 2  # Exponential backoff
-                    continue
-                else:
-                    return f"❌ AI Review failed: Rate limit exceeded after {max_retries} retries using {model}."
-
+             
+            # Ollama rarely rate limits locally, but good practice to handle connection errors
             response.raise_for_status()
             
             data = response.json()
-            if "candidates" in data and len(data["candidates"]) > 0:
-                return data["candidates"][0]["content"]["parts"][0]["text"]
+            if "response" in data:
+                return data["response"]
             else:
-                if "promptFeedback" in data:
-                    return f"❌ Gemini blocked content: {data['promptFeedback']}"
-                return "❌ Gemini returned no content. Check API limits or diff size."
+                return "❌ Ollama returned no content. Check model availability."
                 
         except Exception as e:
             if attempt < max_retries - 1:
