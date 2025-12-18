@@ -4,6 +4,7 @@ on:
   workflow_run:
     workflows: ["Simulate Build Failure"] # Triggers when our test failure runs
     types: [completed]
+    # Trigger fresh SHA update
 
 jobs:
   analyze-failure:
