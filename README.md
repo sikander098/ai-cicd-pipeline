@@ -88,6 +88,29 @@ Just open a Pull Request. The Agent automatically scans the diff.
 > + api_key = os.getenv("API_KEY")
 > ```
 
+### 2. Automated Root Cause Analysis (RCA)
+If a build fails (e.g., Java syntax error), the **AI RCA Agent**:
+1.  Automatically triggers on the failure event.
+2.  Parses the logs to isolate the error stack trace.
+3.  Feeds the context to the local Ollama LLM.
+4.  Posts the proposed fix as a comment on the PR.
+
+> **🔍 AI Diagnosis:**
+> "The error `package java.util.lists does not exist` indicates a typo. Replace with `java.util.List`."
+
+---
+
+## 🛡️ Technical Deep Dive (War Stories)
+
+Implementing "Air-Gapped" AI on Windows presented specific challenges that required enterprise-grade solutions:
+
+*   **The PowerShell Restriction:** Corporate execution policies (`Restricted`) blocked standard GitHub runners.
+    *   **Solution:** Forced `shell: cmd` for all steps to bypass PowerShell completely.
+*   **The CRLF Trap:** Scripts written on Windows (`\r\n`) broke inside Linux Docker containers.
+    *   **Solution:** Implemented dynamic script sanitization (`sed -i 's/\r$//'`) at container runtime.
+*   **Docker Host Networking:** Containers couldn't access the host's GPU API by default.
+    *   **Solution:** Mapped `http://host.docker.internal:11434` and bound Ollama to `0.0.0.0`.
+
 ## 🔮 Roadmap
 *   **Predictive Scaling:** Integrate Terraform with historical metrics to adjust resource limits dynamically.
 *   **Vector DB Integration:** Store past code reviews to prevent the AI from flagging the same "won't fix" issues twice.
