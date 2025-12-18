@@ -28,34 +28,45 @@ A Python-based agent that hooks into GitHub Pull Requests:
 
 ```mermaid
 graph TD
-    User([Developer]) -->|Push Code| GH[GitHub Actions]
-    
-    subgraph "AI Pipeline"
-        GH -->|Trigger| Agent[Python AI Agent]
-        Agent -->|Diff Analysis| LLM{LLM Inference}
-        LLM -->|Ollama API| Local[Local Host:11434]
-        LLM -->|Llama 3 70b| Groq[Groq API]
+    subgraph "Public Cloud (GitHub)"
+        PR[Pull Request] -->|Webhook Trigger| Actions[GitHub Actions Control Plane]
+        Actions -->|Queue Job| Queue
+    end
+
+    subgraph "Corporate Network / Edge (Your Infrastructure)"
+        Runner[Self-Hosted Runner] -->|Long Poll| Queue
+        Runner -->|Spin Up| Docker[Docker Container]
+        
+        subgraph "Local GPU Node"
+            Docker -->|Code Diff| Script[Python Agent]
+            Script -->|HTTP POST| Ollama[Ollama Service]
+            Ollama -->|Inference| GPU[NVIDIA RTX 2060]
+            GPU -->|Analysis| Ollama
+        end
+        
+        Script -->|Review Comments| PR
     end
     
-    subgraph "Outputs"
-        Google -->|Review Comments| PR[Pull Request]
-        Google -->|Fix Suggestion| Logs[Build Logs]
-    end
-    
-    GH -->|Deploy| AWS[AWS EKS]
+    style GPU fill:#76b900,stroke:#333,stroke-width:2px,color:white
+    style Docker fill:#2496ed,stroke:#333,stroke-width:2px,color:white
 ```
+
+## 🔧 Implementation Details
+*   **Cross-Platform Compatibility:** Engineered execution wrappers (`cmd`, `git-bash`) to ensure pipeline reliability across heterogeneous OS environments (Windows/Linux) without modifying host security policies.
+*   **Service-Level Architecture:** Configured the Docker Daemon and Runner service for headless operation, ensuring stability across reboots using Windows Service isolation.
+*   **Resiliency Patterns:** Implemented exponential backoff logic in the Python API client to handle the variability of local GPU inference latency.
 
 ## 🛠️ Setup & Configuration
 
 ### Prerequisites
 *   GitHub Repository with Actions enabled.
-*   **Ollama** installed locally (`winget install Ollama.Ollama`).
-*   Model pulled: `ollama pull qwen2.5-coder:7b`.
+*   **Ollama** running locally (`ollama serve`).
+*   **Self-Hosted Runner** configured on the same machine.
 
 ### Installation
-1.  **Workflows**: Copy `.github/workflows/ai-review.yml` to your repo.
-2.  **Scripts**: Place `scripts/ai_reviewer.py` in your source.
-3.  **Secrets**: None required! (Runs on localhost).
+1.  **Workflows**: Copy `.github/workflows/ai-review.yml`.
+2.  **Runner**: Set up a self-hosted runner in GitHub Settings -> Actions -> Runners.
+3.  **Run**: Start the runner with `./run.cmd`. No API keys needed!
 
 ## 💻 Usage Example
 
