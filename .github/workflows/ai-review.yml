@@ -1,11 +1,12 @@
-name: AI Code Review
+name: AI Code Review (Gemini 1.5 Flash)
 
 on:
   pull_request:
     types: [opened, synchronize]
+  workflow_dispatch: # Allow manual trigger
 
 jobs:
-  ai-review:
+  review:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -45,7 +46,7 @@ jobs:
             const fs = require('fs');
             try {
               const review = fs.readFileSync('review.md', 'utf8');
-              const body = `## 🤖 AI Code Review (Gemini 1.5)\n\n${review}`;
+              const body = `## 🤖 AI Code Review (Gemini 1.5 Flash)\n\n${review}`;
               
               await github.rest.issues.createComment({
                 issue_number: context.issue.number,
