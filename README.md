@@ -1,72 +1,72 @@
-# AI-Powered CI/CD Pipeline & Code Reviewer
-![Build Status](https://img.shields.io/badge/build-passing-brightgreen) ![Python](https://img.shields.io/badge/python-3.9%2B-blue) ![LLM](https://img.shields.io/badge/AI-Gemini%20%7C%20Groq-purple)
+# AI-Native Hybrid CI/CD Pipeline
+![Architecture](https://img.shields.io/badge/Architecture-Hybrid%20Edge-blueviolet) ![Inference](https://img.shields.io/badge/Inference-Ollama%20%7C%20Groq%20%7C%20Gemini-orange) ![Cost](https://img.shields.io/badge/OpEx-Zero%20Cost-brightgreen)
 
-A self-healing, intelligent CI/CD pipeline architecture that integrates **Local Generative AI** into the software delivery lifecycle. It performs automated code reviews, detects security vulnerabilities (SAST), and provides Automated Root Cause Analysis (RCA) for build failures. Uses **Ollama + Qwen 2.5 Coder** for private, free, and unlimited inference.
+A production-grade, self-healing CI/CD pipeline architecture that bridges **Cloud Automation** (GitHub Actions) with **Edge AI Compute** (Self-Hosted GPU Runners).
 
-> **Status:** Reference Implementation (Architecture Phase)
+It performs automated code reviews and root cause analysis (RCA) using a **Hybrid Inference Engine**—routing requests to low-latency cloud models (Groq) or secure, zero-cost local models (Qwen 2.5 via Ollama) based on data privacy requirements.
 
-## 🚀 Key Features
+## 🚀 Key Differentiators
+
+### 🔒 Privacy-First "Air-Gapped" Mode
+Unlike standard AI tools that send code to external APIs, this pipeline supports **Local Inference**.
+*   **Infrastructure:** Runs on **GitHub Self-Hosted Runners** connected to local GPU resources (NVIDIA RTX).
+*   **Data Sovereignty:** Proprietary code never leaves the local network (Zero Egress).
+*   **FinOps:** Eliminates API token costs by utilizing existing hardware for inference.
 
 ### 🤖 Intelligent Code Reviewer
-A Python-based agent that hooks into GitHub Pull Requests:
-*   **Security Analysis:** Detects hardcoded secrets, injection flaws, and IAM permission risks.
-*   **Performance Audits:** Identifies N+1 queries, memory leaks, and inefficient loops.
-*   **Style Enforcer:** Checks for SOLID principles and maintainability.
+A Python-based agent that sanitizes and analyzes Pull Requests:
+*   **Security Analysis:** Detects hardcoded secrets, injection flaws, and IAM permission risks (SAST).
+*   **Performance Audits:** Identifies N+1 queries and memory leaks.
+*   **Logic Verification:** Uses chain-of-thought reasoning to validate business logic.
 
 ### 🧠 Automated Root Cause Analysis (RCA)
-*   **Log Parsing:** Automatically captures build failure logs from GitHub Actions.
-*   **Contextual Remediation:** Feeds errors to the Local LLM (Ollama) to generate specific fix code blocks.
+*   **Log Parsing:** Automatically captures build failure logs from the runner.
+*   **Contextual Remediation:** Feeds errors to the LLM to generate specific fix code blocks.
 *   **ChatOps:** Posts the fix directly to the PR comments.
-
-### 📈 Predictive Scaling (Architecture)
-*   **Traffic Forecasting:** Ingests historical metrics to predict resource usage.
-*   **Dynamic Terraform:** (Roadmap) Adjusts `requests/limits` in Terraform plans prior to deployment based on predicted load.
 
 ---
 
-## 🏗️ Architecture
+## 🏗️ Hybrid Architecture
+
+This system uses a **Split-Plane Architecture** to combine the convenience of GitHub with the power of local GPUs.
 
 ```mermaid
 graph TD
-    subgraph "Public Cloud (GitHub)"
-        PR[Pull Request] -->|Webhook Trigger| Actions[GitHub Actions Control Plane]
-        Actions -->|Queue Job| Queue
+    subgraph "Control Plane (Public Cloud)"
+        User([Developer]) -->|Push Code| GH[GitHub Actions]
+        GH -->|Queue Job| Queue
     end
 
-    subgraph "Corporate Network / Edge (Your Infrastructure)"
-        Runner[Self-Hosted Runner] -->|Long Poll| Queue
+    subgraph "Data Plane (Edge / Corporate Network)"
+        Runner[Self-Hosted Runner] -->|Poll| Queue
         Runner -->|Spin Up| Docker[Docker Container]
         
-        subgraph "Local GPU Node"
-            Docker -->|Code Diff| Script[Python Agent]
-            Script -->|HTTP POST| Ollama[Ollama Service]
-            Ollama -->|Inference| GPU[NVIDIA RTX 2060]
-            GPU -->|Analysis| Ollama
+        subgraph "Inference Node"
+            Docker -->|Diff Analysis| Agent[Python Agent]
+            Agent -->|HTTP/Bridge| Ollama[Ollama Service]
+            Ollama -->|Compute| GPU[NVIDIA GPU]
         end
         
-        Script -->|Review Comments| PR
+        Agent -->|Review Output| GH
     end
     
     style GPU fill:#76b900,stroke:#333,stroke-width:2px,color:white
     style Docker fill:#2496ed,stroke:#333,stroke-width:2px,color:white
 ```
 
-## 🔧 Implementation Details
-*   **Cross-Platform Compatibility:** Engineered execution wrappers (`cmd`, `git-bash`) to ensure pipeline reliability across heterogeneous OS environments (Windows/Linux) without modifying host security policies.
-*   **Service-Level Architecture:** Configured the Docker Daemon and Runner service for headless operation, ensuring stability across reboots using Windows Service isolation.
-*   **Resiliency Patterns:** Implemented exponential backoff logic in the Python API client to handle the variability of local GPU inference latency.
-
 ## 🛠️ Setup & Configuration
 
-### Prerequisites
-*   GitHub Repository with Actions enabled.
-*   **Ollama** running locally (`ollama serve`).
-*   **Self-Hosted Runner** configured on the same machine.
+### Option A: Cloud Mode (Groq/Gemini)
+Best for speed and public repositories.
+1.  Add `GROQ_API_KEY` to GitHub Secrets.
+2.  Set `LLM_PROVIDER` var to `groq`.
+3.  Runs on standard GitHub Ubuntu runners.
 
-### Installation
-1.  **Workflows**: Copy `.github/workflows/ai-review.yml`.
-2.  **Runner**: Set up a self-hosted runner in GitHub Settings -> Actions -> Runners.
-3.  **Run**: Start the runner with `./run.cmd`. No API keys needed!
+### Option B: Edge Mode (Ollama/Local)
+Best for privacy and cost savings.
+1.  **Host Setup:** Install Ollama and pull the model: `ollama pull qwen2.5-coder:7b`.
+2.  **Runner:** Install the GitHub Self-Hosted Runner on the GPU machine.
+3.  **Network:** The Docker container connects to the host via `host.docker.internal` to access the GPU API.
 
 ## 💻 Usage Example
 
@@ -75,7 +75,7 @@ Just open a Pull Request. The Agent automatically scans the diff.
 
 **Example Output:**
 
-> **🤖 AI Code Review**
+> **🤖 AI Code Review (Model: Qwen 2.5-Coder)**
 > 
 > | Category | Status | Findings |
 > |----------|--------|----------|
@@ -89,8 +89,8 @@ Just open a Pull Request. The Agent automatically scans the diff.
 > ```
 
 ## 🔮 Roadmap
-*   **Vector DB Integration**: Store past code review feedback to prevent repeat errors.
-*   **Predictive Scaling**: Implement the Terraform dynamic variable injection based on Prometheus metrics.
+*   **Predictive Scaling:** Integrate Terraform with historical metrics to adjust resource limits dynamically.
+*   **Vector DB Integration:** Store past code reviews to prevent the AI from flagging the same "won't fix" issues twice.
 
 ## 📄 License
 MIT
