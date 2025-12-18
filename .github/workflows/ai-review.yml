@@ -20,6 +20,7 @@ jobs:
       
       - name: Get PR Diff
         id: diff
+        shell: bash
         run: |
           git diff origin/${{ github.base_ref }}...HEAD > pr_diff.txt
           echo "Different lines: $(wc -l < pr_diff.txt)"
