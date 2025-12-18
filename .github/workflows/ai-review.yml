@@ -16,9 +16,7 @@ jobs:
         with:
           fetch-depth: 0
       
-      - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
+
       
       - name: Get PR Diff
         id: diff
