@@ -93,6 +93,12 @@ def main():
     print(f"🤖 Sending {len(log_content)} chars to Local AI ({args.model}) for RCA...")
     analysis = analyze_logs_with_gemini(log_content, args.model, args.endpoint)
     
+    print("\n" + "="*40)
+    print("🤖 AI ROOT CAUSE ANALYSIS")
+    print("="*40)
+    print(analysis)
+    print("="*40 + "\n")
+    
     with open(args.output, 'w', encoding='utf-8') as f:
         f.write(analysis)
     
