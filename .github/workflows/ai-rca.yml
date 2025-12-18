@@ -37,9 +37,8 @@ jobs:
             }
             
       - name: AI Root Cause Analysis
-        shell: cmd
         run: |
-          docker run --rm -v "%GITHUB_WORKSPACE%:/app" -w /app python:3.9-slim /bin/sh scripts/rca_entrypoint.sh
+          docker run --rm -v "%GITHUB_WORKSPACE%:/app" -w /app python:3.9-slim /bin/sh -c "cp scripts/rca_entrypoint.sh /tmp/rca.sh && sed -i 's/\r$//' /tmp/rca.sh && /bin/sh /tmp/rca.sh"
       
       - name: Post RCA Comment
         uses: actions/github-script@v6
