@@ -42,20 +42,40 @@ Build Logs:
         }
     }
     
-    try:
-        response = requests.post(url, headers=headers, json=payload)
-        response.raise_for_status()
-        
-        data = response.json()
-        if "candidates" in data and len(data["candidates"]) > 0:
-            return data["candidates"][0]["content"]["parts"][0]["text"]
-        else:
-            if "promptFeedback" in data:
-                return f"❌ Gemini blocked content: {data['promptFeedback']}"
-            return "❌ Gemini returned no content. Check API limits or log size."
+    import time
+
+    max_retries = 3
+    retry_delay = 2
+
+    for attempt in range(max_retries):
+        try:
+            response = requests.post(url, headers=headers, json=payload)
             
-    except Exception as e:
-        return f"❌ AI RCA failed: {str(e)}"
+            if response.status_code == 429:
+                if attempt < max_retries - 1:
+                    print(f"⏳ Rate limited (429). Retrying in {retry_delay}s...")
+                    time.sleep(retry_delay)
+                    retry_delay *= 2
+                    continue
+                else:
+                    return "❌ AI RCA failed: Rate limit exceeded after 3 retries."
+            
+            response.raise_for_status()
+            
+            data = response.json()
+            if "candidates" in data and len(data["candidates"]) > 0:
+                return data["candidates"][0]["content"]["parts"][0]["text"]
+            else:
+                if "promptFeedback" in data:
+                    return f"❌ Gemini blocked content: {data['promptFeedback']}"
+                return "❌ Gemini returned no content. Check API limits or log size."
+                
+        except Exception as e:
+            if attempt < max_retries - 1:
+                print(f"⚠️ Error: {str(e)}. Retrying...")
+                time.sleep(retry_delay)
+                continue
+            return f"❌ AI RCA failed: {str(e)}"
 
 def main():
     parser = argparse.ArgumentParser()
