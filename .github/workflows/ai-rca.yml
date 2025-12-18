@@ -2,7 +2,7 @@ name: AI Root Cause Analysis
 
 on:
   workflow_run:
-    workflows: ["CI"] # Triggers when your main CI workflow runs
+    workflows: ["Simulate Build Failure"] # Triggers when our test failure runs
     types: [completed]
 
 jobs:

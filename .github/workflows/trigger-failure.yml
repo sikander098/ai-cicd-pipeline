@@ -1,0 +1,17 @@
+name: Simulate Build Failure
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: self-hosted
+    steps:
+      - name: Compile Java App (Simulation)
+        shell: cmd
+        run: |
+          echo "Compiling application..."
+          echo "[ERROR] /src/main/java/com/example/App.java:14: error: ';' expected"
+          echo "[ERROR] /src/main/java/com/example/App.java:22: error: package java.util.lists does not exist"
+          echo "BUILD FAILED"
+          exit 1
