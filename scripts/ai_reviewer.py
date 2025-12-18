@@ -27,7 +27,7 @@ Code Diff:
 ```
 """
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key={api_key}"
     
     headers = {
         "Content-Type": "application/json"
@@ -45,8 +45,8 @@ Code Diff:
     
     import time
     
-    max_retries = 3
-    retry_delay = 2  # seconds
+    max_retries = 5
+    retry_delay = 10  # seconds
 
     for attempt in range(max_retries):
         try:
