@@ -1,0 +1,97 @@
+name: AI Root Cause Analysis
+
+on:
+  workflow_run:
+    workflows: ["CI"] # Triggers when your main CI workflow runs
+    types: [completed]
+
+jobs:
+  analyze-failure:
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          
+      - name: Install dependencies
+        run: |
+          pip install requests
+      
+      - name: Download Build Logs
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            // Download logs from the failed run
+            const logs = await github.rest.actions.downloadWorkflowRunLogs({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.payload.workflow_run.id
+            });
+            // Logs come as a zip, for simplicity in this demo we assume handling or 
+            // downloading the specific job log directly. 
+            // In a real scenario, we'd unzip. 
+            // For this simpler agent, we'll assume we can grab the log text via API or 
+            // simulate it. 
+            // ALTERNATIVE: Getting job logs directly is complex in actions.
+            // Simplified approach: Trigger RCA on the failure step IN the CI workflow itself.
+            // BUT, for a "finishing" touch, let's keep it separate to avoid modifying existing CI.
+            // We will save a placeholder log or handle the zip if possible.
+            // Let's write a simple placeholder if actual log retrieval is too complex 
+            // for this snippet, but we aim for "Real Work".
+            // Implementation of unzip:
+            fs.writeFileSync('logs.zip', Buffer.from(logs.data));
+            
+      - name: Unzip logs
+        run: unzip logs.zip -d build_logs
+        
+      - name: Find failure log
+        id: find_log
+        run: |
+          # Find the largest log file (usually the main build)
+          LOG_FILE=$(find build_logs -name "*.txt" -type f -printf "%s %p\n" | sort -rn | head -n1 | cut -d" " -f2)
+          echo "log_file=$LOG_FILE" >> $GITHUB_OUTPUT
+          
+      - name: AI Root Cause Analysis
+        env:
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+        run: |
+          python scripts/ai_rca.py \
+            --logs "${{ steps.find_log.outputs.log_file }}" \
+            --output rca.md
+      
+      - name: Post RCA Comment
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            try {
+              const rca = fs.readFileSync('rca.md', 'utf8');
+              
+              // Find related PR
+              const prs = await github.rest.pulls.list({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                state: 'open',
+                head: context.payload.workflow_run.head_branch
+              });
+              
+              if (prs.data.length > 0) {
+                await github.rest.issues.createComment({
+                  issue_number: prs.data[0].number,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  body: `## 🔍 AI Root Cause Analysis (Gemini 1.5)\n\n${rca}`
+                });
+              }
+            } catch (error) {
+              console.log("Error posting comment: " + error);
+            }
