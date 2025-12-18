@@ -4,9 +4,10 @@ import sys
 import argparse
 import requests
 import json
+# Force sync check
 
-def analyze_code_with_gemini(diff_content, api_key):
-    """Send code diff to Google Gemini for analysis"""
+def analyze_code_with_gemini(diff_content, model, endpoint):
+    """Send code diff to Local AI (Ollama)"""
     
     prompt = f"""You are an expert Senior DevOps Engineer and Code Reviewer. 
 Your task is to analyze the following code diff from a Pull Request.
@@ -27,9 +28,6 @@ Code Diff:
 ```
 """
 
-    model = "qwen2.5-coder:7b"
-    url = "http://localhost:11434/api/generate"
-    
     headers = {
         "Content-Type": "application/json"
     }
@@ -52,7 +50,7 @@ Code Diff:
 
     for attempt in range(max_retries):
         try:
-            response = requests.post(url, headers=headers, json=payload)
+            response = requests.post(endpoint, headers=headers, json=payload)
              
             # Ollama rarely rate limits locally, but good practice to handle connection errors
             response.raise_for_status()
@@ -74,12 +72,12 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--diff", required=True, help="Path to diff file")
     parser.add_argument("--output", required=True, help="Output file")
+    parser.add_argument("--model", default="qwen2.5-coder:7b", help="Ollama model to use")
+    parser.add_argument("--endpoint", default="http://localhost:11434/api/generate", help="Ollama API endpoint")
     args = parser.parse_args()
     
-    api_key = os.getenv("GOOGLE_API_KEY")
-    if not api_key:
-        print("❌ GOOGLE_API_KEY not set")
-        sys.exit(1)
+    # Check if using Gemini (for backward compatibility if key is present)
+    # But for this Local-First version, we prioritize Ollama args
     
     try:
         with open(args.diff, 'r', encoding='utf-8') as f:
@@ -93,8 +91,8 @@ def main():
     if len(diff_content) > 100000:
         diff_content = diff_content[:100000] + "\n... (truncated diff due to size)"
     
-    print(f"🤖 Sending {len(diff_content)} chars to Gemini...")
-    review = analyze_code_with_gemini(diff_content, api_key)
+    print(f"🤖 Sending {len(diff_content)} chars to Local AI ({args.model})...")
+    review = analyze_code_with_gemini(diff_content, args.model, args.endpoint)
     
     with open(args.output, 'w', encoding='utf-8') as f:
         f.write(review)
