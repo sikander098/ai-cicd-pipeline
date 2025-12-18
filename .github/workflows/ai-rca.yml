@@ -8,7 +8,7 @@ on:
 jobs:
   analyze-failure:
     if: ${{ github.event.workflow_run.conclusion == 'failure' }}
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     permissions:
       contents: read
       actions: read
@@ -16,57 +16,29 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-          
-      - name: Install dependencies
-        run: |
-          pip install requests
-      
       - name: Download Build Logs
         uses: actions/github-script@v6
         with:
           script: |
             const fs = require('fs');
-            // Download logs from the failed run
-            const logs = await github.rest.actions.downloadWorkflowRunLogs({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              run_id: context.payload.workflow_run.id
-            });
-            // Logs come as a zip, for simplicity in this demo we assume handling or 
-            // downloading the specific job log directly. 
-            // In a real scenario, we'd unzip. 
-            // For this simpler agent, we'll assume we can grab the log text via API or 
-            // simulate it. 
-            // ALTERNATIVE: Getting job logs directly is complex in actions.
-            // Simplified approach: Trigger RCA on the failure step IN the CI workflow itself.
-            // BUT, for a "finishing" touch, let's keep it separate to avoid modifying existing CI.
-            // We will save a placeholder log or handle the zip if possible.
-            // Let's write a simple placeholder if actual log retrieval is too complex 
-            // for this snippet, but we aim for "Real Work".
-            // Implementation of unzip:
-            fs.writeFileSync('logs.zip', Buffer.from(logs.data));
+            try {
+              const logs = await github.rest.actions.downloadWorkflowRunLogs({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                run_id: context.payload.workflow_run.id
+              });
+              fs.writeFileSync('logs.zip', Buffer.from(logs.data));
+              console.log("✅ Logs downloaded to logs.zip");
+            } catch (error) {
+              console.log("❌ Error downloading logs: " + error);
+              // Create dummy log for demo if download fails (e.g. artifact retention)
+              fs.writeFileSync('logs.zip', ''); 
+            }
             
-      - name: Unzip logs
-        run: unzip logs.zip -d build_logs
-        
-      - name: Find failure log
-        id: find_log
-        run: |
-          # Find the largest log file (usually the main build)
-          LOG_FILE=$(find build_logs -name "*.txt" -type f -printf "%s %p\n" | sort -rn | head -n1 | cut -d" " -f2)
-          echo "log_file=$LOG_FILE" >> $GITHUB_OUTPUT
-          
       - name: AI Root Cause Analysis
-        env:
-          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+        shell: cmd
         run: |
-          python scripts/ai_rca.py \
-            --logs "${{ steps.find_log.outputs.log_file }}" \
-            --output rca.md
+          docker run --rm -v "%GITHUB_WORKSPACE%:/app" -w /app python:3.9-slim /bin/sh -c "apt-get update && apt-get install -y unzip && unzip -o logs.zip -d build_logs && find build_logs -name '*.txt' -exec grep -l 'Error' {} + | head -n 1 | xargs -I {} pip install requests && python scripts/ai_rca.py --logs '{}' --output rca.md --model 'qwen2.5-coder:7b' --endpoint 'http://host.docker.internal:11434/api/generate'"
       
       - name: Post RCA Comment
         uses: actions/github-script@v6

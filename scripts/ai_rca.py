@@ -5,8 +5,8 @@ import argparse
 import requests
 import json
 
-def analyze_logs_with_gemini(log_content, api_key):
-    """Send build logs to Google Gemini for Root Cause Analysis"""
+def analyze_logs_with_gemini(log_content, model, endpoint):
+    """Send build logs to Local AI (Ollama) for Root Cause Analysis"""
     
     prompt = f"""You are an expert DevOps Engineer and Build Troubleshooter. 
 Your task is to analyze the following CI/CD build log failure.
@@ -26,8 +26,7 @@ Build Logs:
 ```
 """
 
-    model = "qwen2.5-coder:7b"
-    url = "http://localhost:11434/api/generate"
+    url = endpoint
     
     headers = {
         "Content-Type": "application/json"
@@ -72,12 +71,12 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--logs", required=True, help="Path to log file")
     parser.add_argument("--output", required=True, help="Output file")
+    parser.add_argument("--model", default="qwen2.5-coder:7b", help="Ollama model to use")
+    parser.add_argument("--endpoint", default="http://localhost:11434/api/generate", help="Ollama API endpoint")
     args = parser.parse_args()
     
-    api_key = os.getenv("GOOGLE_API_KEY")
-    if not api_key:
-        print("❌ GOOGLE_API_KEY not set")
-        sys.exit(1)
+    # Check if using Gemini (for backward compatibility if key is present)
+    # But for this Local-First version, we prioritize Ollama args
     
     try:
         with open(args.logs, 'r', encoding='utf-8') as f:
@@ -86,14 +85,13 @@ def main():
         with open(args.logs, 'r', encoding='latin-1') as f:
             log_content = f.read()
     
-    # Limit log size (Gemini Flash has large context, but let's be safe (~100k chars))
-    # For logs, we often want the END of the file where the error is
+    # Limit log size
     if len(log_content) > 100000:
         print("⚠️ Logs too large, truncating to last 100k chars...")
         log_content = "... (truncated)\n" + log_content[-100000:]
     
-    print(f"🤖 Sending {len(log_content)} chars to Gemini for RCA...")
-    analysis = analyze_logs_with_gemini(log_content, api_key)
+    print(f"🤖 Sending {len(log_content)} chars to Local AI ({args.model}) for RCA...")
+    analysis = analyze_logs_with_gemini(log_content, args.model, args.endpoint)
     
     with open(args.output, 'w', encoding='utf-8') as f:
         f.write(analysis)
