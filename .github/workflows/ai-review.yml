@@ -7,7 +7,7 @@ on:
 
 jobs:
   review:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     permissions:
       contents: read
       pull-requests: write
@@ -33,11 +33,14 @@ jobs:
       
       - name: AI Code Review
         env:
-          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          OLLAMA_ENDPOINT: "http://localhost:11434/api/generate"
         run: |
+          pip install requests
           python scripts/ai_reviewer.py \
             --diff pr_diff.txt \
-            --output review.md
+            --output review.md \
+            --model "qwen2.5-coder:7b" \
+            --endpoint "http://localhost:11434/api/generate"
       
       - name: Post Review Comment
         uses: actions/github-script@v6
