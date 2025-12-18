@@ -1,77 +1,84 @@
-# AI-Powered CI/CD Pipeline 🤖
+# AI-Powered CI/CD Pipeline & Code Reviewer
+![Build Status](https://img.shields.io/badge/build-passing-brightgreen) ![Python](https://img.shields.io/badge/python-3.9%2B-blue) ![LLM](https://img.shields.io/badge/AI-Gemini%20%7C%20Groq-purple)
 
-![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=for-the-badge&logo=github-actions&logoColor=white)
-![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
-![Gemini](https://img.shields.io/badge/Google_Gemini-8E75B2?style=for-the-badge&logo=google-bard&logoColor=white)
+A self-healing, intelligent CI/CD pipeline architecture that integrates **Generative AI** into the software delivery lifecycle. It performs automated code reviews, detects security vulnerabilities (SAST), and provides Automated Root Cause Analysis (RCA) for build failures.
 
-A self-healing, intelligent CI/CD pipeline that uses **Google Gemini 1.5 Pro** to perform automated code reviews, detect security vulnerabilities, and suggest fixes for build failures.
+> **Status:** Reference Implementation (Architecture Phase)
 
-## 🚀 Features
+## 🚀 Key Features
 
-- **🤖 AI Agent Code Reviewer**: Automatically analyzes Pull Request diffs for:
-  - 🛡️ **Security Vulnerabilities** (API keys, injection flaws, bad permissions)
-  - ⚡ **Performance Anti-patterns** (N+1 queries, memory leaks)
-  - 🧹 **Code Quality** (SOLID principles, readability)
-- **🧠 Automated Root Cause Analysis (RCA)**:  Parses build logs when a pipeline fails and generates specific fix suggestions.
-- **💬 ChatOps Integration**: Posts review summaries and fix suggestions directly to GitHub PR comments.
+### 🤖 Intelligent Code Reviewer
+A Python-based agent that hooks into GitHub Pull Requests:
+*   **Security Analysis:** Detects hardcoded secrets, injection flaws, and IAM permission risks.
+*   **Performance Audits:** Identifies N+1 queries, memory leaks, and inefficient loops.
+*   **Style Enforcer:** Checks for SOLID principles and maintainability.
+
+### 🧠 Automated Root Cause Analysis (RCA)
+*   **Log Parsing:** Automatically captures build failure logs from GitHub Actions.
+*   **Contextual Remediation:** Feeds errors to the LLM (Gemini 1.5 / Groq) to generate specific fix code blocks.
+*   **ChatOps:** Posts the fix directly to the PR comments.
+
+### 📈 Predictive Scaling (Architecture)
+*   **Traffic Forecasting:** Ingests historical metrics to predict resource usage.
+*   **Dynamic Terraform:** (Roadmap) Adjusts `requests/limits` in Terraform plans prior to deployment based on predicted load.
+
+---
 
 ## 🏗️ Architecture
 
 ```mermaid
 graph TD
-    A[Dev Commits Code] -->|Push| B(GitHub Repo)
-    B -->|Trigger| C{GitHub Actions}
-    C -->|Pull Request| D[AI Code Reviewer]
-    C -->|Build Failure| E[Automated RCA]
+    User([Developer]) -->|Push Code| GH[GitHub Actions]
     
-    subgraph "AI Engine"
-        D -->|Send Diff| F[Python Agent]
-        E -->|Send Logs| F
-        F -->|Prompt| G[Google Gemini API]
-        G -->|Analysis| F
+    subgraph "AI Pipeline"
+        GH -->|Trigger| Agent[Python AI Agent]
+        Agent -->|Diff Analysis| LLM{LLM Inference}
+        LLM -->|Gemini 1.5 Pro| Google[Google AI]
+        LLM -->|Llama 3 70b| Groq[Groq API]
     end
     
-    F -->|Post Comment| H[PR Discussion]
+    subgraph "Outputs"
+        Google -->|Review Comments| PR[Pull Request]
+        Google -->|Fix Suggestion| Logs[Build Logs]
+    end
+    
+    GH -->|Deploy| AWS[AWS EKS]
 ```
 
-## 🛠️ Setup
+## 🛠️ Setup & Configuration
 
-1. **Prerequisites**
-   - GitHub Repository
-   - Google Gemini API Key (Get it from [Google AI Studio](https://aistudio.google.com/))
+### Prerequisites
+*   GitHub Repository with Actions enabled.
+*   LLM API Key: **Google Gemini** (Default) or **Groq** (Low-Latency Mode).
 
-2. **Installation**
-   - Copy `.github/workflows/ai-review.yml` to your repository.
-   - Copy `scripts/ai_reviewer.py` and `requirements.txt` to `scripts/`.
+### Installation
+1.  **Workflows**: Copy `.github/workflows/ai-review.yml` to your repo.
+2.  **Scripts**: Place `scripts/ai_reviewer.py` in your source.
+3.  **Secrets**: Add `GOOGLE_API_KEY` (or `GROQ_API_KEY`) to GitHub Repository Secrets.
 
-3. **Configuration**
-   - Go to **Settings > Secrets and variables > Actions**.
-   - Add a new repository secret: `GOOGLE_API_KEY`.
+## 💻 Usage Example
 
-## 💻 Usage
+### 1. Automated Security Audit
+Just open a Pull Request. The Agent automatically scans the diff.
 
-### Automated Code Review
-Just open a Pull Request! The AI agent will automatically:
-1. Detect changes.
-2. Analyze the diff.
-3. Post a detailed review as a comment.
+**Example Output:**
 
-### Example Output
-
-> **🤖 AI Code Review (Gemini 1.5)**
+> **🤖 AI Code Review**
 > 
-> | Category | Status | Details |
-> |----------|--------|---------|
-> | **Security** | ⚠️ Warn | Hardcoded API key detected in `config.py` |
-> | **Performance** | ✅ Pass | No obvious bottlenecks |
-> | **Quality** | ℹ️ Info | Consider extracting `process_data` logic to a helper function |
+> | Category | Status | Findings |
+> |----------|--------|----------|
+> | **Security** | ⚠️ High | Hardcoded API Key detected in `config.py` line 12. |
+> | **Performance** | ✅ Pass | No bottlenecks detected. |
 > 
-> **Findings:**
-> 1. `config.py:12`: **Security Risk** - Never commit secrets. Use environment variables.
->    ```python
->    - api_key = "sk-123456789"
->    + api_key = os.getenv("API_KEY")
->    ```
+> **Suggestion:**
+> ```python
+> - api_key = "sk-12345"
+> + api_key = os.getenv("API_KEY")
+> ```
+
+## 🔮 Roadmap
+*   **Vector DB Integration**: Store past code review feedback to prevent repeat errors.
+*   **Predictive Scaling**: Implement the Terraform dynamic variable injection based on Prometheus metrics.
 
 ## 📄 License
 MIT
