@@ -38,7 +38,7 @@ jobs:
       - name: AI Root Cause Analysis
         shell: cmd
         run: |
-          docker run --rm -v "%GITHUB_WORKSPACE%:/app" -w /app python:3.9-slim /bin/sh -c "apt-get update && apt-get install -y unzip && pip install requests && unzip -o logs.zip -d build_logs && LOG_FILE=\$(find build_logs -name '*.txt' -exec grep -li 'error' {} + | head -n 1) && echo 'Analyzing: '\$LOG_FILE && python scripts/ai_rca.py --logs \"\$LOG_FILE\" --output rca.md --model 'qwen2.5-coder:7b' --endpoint 'http://host.docker.internal:11434/api/generate'"
+          docker run --rm -v "%GITHUB_WORKSPACE%:/app" -w /app python:3.9-slim /bin/sh scripts/rca_entrypoint.sh
       
       - name: Post RCA Comment
         uses: actions/github-script@v6
